@@ -237,64 +237,66 @@ function test_input($data)
             <?php endif; ?>
         </div>
     </header>
+    <div class="page-container">
+        <main class="content">
+            <div class="form-container">
+                <div class="left">
+                    <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>"
+                        enctype="multipart/form-data">
+                        <label>Select Channel:</label><br>
+                        <span class="error"><?php echo $channel_name_err; ?></span>
+                        <select name="channel_id" required>
+                            <option value="">-- Choose a channel --</option>
+                            <?php foreach ($channels as $ch): ?>
+                                <option value="<?php echo $ch['id']; ?>">
+                                    <?php echo htmlspecialchars($ch['channel_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <br><br>
 
-    <main class="content">
-        <div class="form-container">
-            <div class="left">
-                <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>"
-                    enctype="multipart/form-data">
-                    <label>Select Channel:</label><br>
-                    <span class="error"><?php echo $channel_name_err; ?></span>
-                    <select name="channel_id" required>
-                        <option value="">-- Choose a channel --</option>
-                        <?php foreach ($channels as $ch): ?>
-                            <option value="<?php echo $ch['id']; ?>">
-                                <?php echo htmlspecialchars($ch['channel_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <br><br>
+                        <label>Video Name:</label><br>
+                        <span class="error">
+                            <?php echo $video_name_err; ?>
+                        </span>
+                        <input type="text" id="video" name="video_name"
+                            value="<?php echo htmlspecialchars($video_name); ?>">
+                        <br><br>
 
-                    <label>Video Name:</label><br>
-                    <span class="error">
-                        <?php echo $video_name_err; ?>
-                    </span>
-                    <input type="text" id="video" name="video_name"
-                        value="<?php echo htmlspecialchars($video_name); ?>">
-                    <br><br>
+                        <label>Thumbnail (JPG/PNG):</label><br>
+                        <span class="error">
+                            <?php echo $thumbnail_err; ?>
+                        </span>
+                        <input type="file" name="thumbnail" accept="image/jpeg,image/png">
+                        <br><br>
 
-                    <label>Thumbnail (JPG/PNG):</label><br>
-                    <span class="error">
-                        <?php echo $thumbnail_err; ?>
-                    </span>
-                    <input type="file" name="thumbnail" accept="image/jpeg,image/png">
-                    <br><br>
+                        <label>Upload Video:</label><br>
+                        <span class="error">
+                            <?php echo $video_err; ?>
+                        </span>
+                        <input type="file" id="video" name="document" accept=".mp4">
+                        <br><br>
 
-                    <label>Upload Video:</label><br>
-                    <span class="error">
-                        <?php echo $video_err; ?>
-                    </span>
-                    <input type="file" id="video" name="document" accept=".mp4">
-                    <br><br>
+                        <label>
+                            <input type="checkbox" name="is_short" value="1">
+                            This video is a Short (vertical, under 60 seconds)
+                            <p><i>"A Short is a vertical video (9:16 aspect ratio) that is 60 seconds or less. Check
+                                    this
+                                    box if
+                                    your video meets these criteria."</i></p>
+                        </label>
+                        <br><br>
 
-                    <label>
-                        <input type="checkbox" name="is_short" value="1">
-                        This video is a Short (vertical, under 60 seconds)
-                        <p><i>"A Short is a vertical video (9:16 aspect ratio) that is 60 seconds or less. Check this
-                                box if
-                                your video meets these criteria."</i></p>
-                    </label>
-                    <br><br>
-
-                    <input type="submit" value="Upload Now" class="btn" name="submit">
-                </form>
+                        <input type="submit" value="Upload Now" class="btn" name="submit">
+                    </form>
+                </div>
+                <div class="right">
+                    <img src="https://thumbs.dreamstime.com/b/man-records-video-blog-vlog-concept-vector-flat-style-illustration-happy-blogger-97398592.jpg"
+                        alt="Create_Channel">
+                </div>
             </div>
-            <div class="right">
-                <img src="https://thumbs.dreamstime.com/b/man-records-video-blog-vlog-concept-vector-flat-style-illustration-happy-blogger-97398592.jpg"
-                    alt="Create_Channel">
-            </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <script src="script.js"></script>
 </body>

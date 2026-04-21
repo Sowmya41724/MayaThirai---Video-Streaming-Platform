@@ -64,6 +64,12 @@ $(document).ready(function () {
   });
 });
 
+$(document).ready(function () {
+  $(".menu-toggle").click(function () {
+    $(this).toggleClass("active");
+  });
+});
+
 function myFunction() {
   var x = document.getElementById("mySidebar");
   if (x.style.display === "none") {
@@ -71,4 +77,17 @@ function myFunction() {
   } else {
     x.style.display = "none";
   }
+}
+
+/* ---------- Setting ------------- */
+function openNav() {
+  document.getElementById("offcanvasSidebar").style.width = "250px";
+  document.getElementById("overlay").style.display = "block";
+  document.body.classList.add("menu-open");
+}
+
+function closeNav() {
+  document.getElementById("offcanvasSidebar").style.width = "0";
+  document.getElementById("overlay").style.display = "none";
+  document.body.classList.remove("menu-open");
 }

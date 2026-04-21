@@ -66,18 +66,134 @@ $video_id = isset($_GET['v']) ? $_GET['v'] : '';
             <?php endif; ?>
         </div>
     </header>
-    <main class="content">
-        <?php if ($video_id): ?>
-            <div class="video-container">
-                <iframe width="100%" height="500"
-                    src="https://youtube.com/embed/<?php echo htmlspecialchars($video_id); ?>?autoplay=1" frameborder="0"
-                    allowfullscreen>
-                </iframe>
+    <div class="app-container">
+
+        <!-- SIDE MENU -->
+        <nav class="side-menu" id="mySidebar">
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='#Home';">
+                    <i class="fa fa-home"></i>Home
+                </div>
             </div>
-        <?php else: ?>
-            <p>Video not found.</p>
-        <?php endif; ?>
-    </main>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='shorts.php';">
+                    <i class="fa fa-play"></i>Shorts
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='you/profile.php';">
+                    YOU <i class="fas fa-chevron-right arrow"></i>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='you/history.php';">
+                    <i class="fa fa-history"></i>History
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='you/playlist.php';">
+                    <i class="fas fa-list"></i>Playlist
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='you/watch_later.php';">
+                    <i class="fas fa-clock"></i>Watch Later
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='you/liked_videos.php';">
+                    <i class="fas fa-thumbs-up"></i>Liked Videos
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='you/your_videos.php';">
+                    <i class="fas fa-video"></i>Your Videos
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='you/downloads.php';">
+                    <i class="fas fa-download"></i>Downloads
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='explore/explore.php';">
+                    EXPLORE <i class="fas fa-chevron-right arrow"></i>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='explore/shopping.php';">
+                    <i class="fas fa-shopping-cart"></i>Shopping
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='explore/music.php';">
+                    <i class="fas fa-music"></i>Music
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <div class="menu-head dashboard" onclick="window.location.href='explore/film.php';">
+                    <i class="fas fa-film"></i>Film
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <!-- The list comes first now -->
+                <ul class="submenu" id="more-menu">
+                    <li><a href="explore/live.php"><i class="fas fa-broadcast-tower"></i><span>Live</span></a></li>
+                    <li><a href="explore/news.php"><i class="fas fa-newspaper"></i><span>News</span></a></li>
+                    <li><a href="explore/sports.php"><i class="fas fa-trophy"></i><span>Sports</span></a></li>
+                    <li><a href="explore/courses.php"><i class="fas fa-book-open"></i><span>Courses</span></a></li>
+                    <li><a href="explore/fashion_beauty.php"><i class="fas fa-tshirt"></i><span>Fashion &
+                                Beauty</span></a></li>
+                    <li><a href="explore/podcast.php"><i class="fas fa-podcast"></i><span>Podcasts</span></a></li>
+                    <li><a href="explore/playables.php"><i class="fas fa-gamepad"></i><span>Playables</span></a></li>
+                </ul>
+
+                <!-- The button is at the bottom -->
+                <div class="menu-head" onclick="toggleSubmenu(this)">
+                    <span id="toggleText">Show More</span>
+                    <i class="fas fa-chevron-down arrow"></i>
+                </div>
+            </div>
+
+
+            <hr>
+
+            <div style="color: darkslategray; text-align: center;">
+                <p>&copy;
+                    <?php echo date('Y'); ?> MayaThirai. All rights reserved.
+                </p>
+            </div>
+        </nav>
+        <main class="content">
+            <?php if ($video_id): ?>
+                <div class="video-container">
+                    <iframe class="video-player" width="100%" height="500"
+                        src="https://youtube.com/embed/<?php echo htmlspecialchars($video_id); ?>?autoplay=1"
+                        frameborder="0" allowfullscreen>
+                    </iframe>
+                </div>
+            <?php else: ?>
+                <p>Video not found.</p>
+            <?php endif; ?>
+        </main>
+    </div>
     <script src="script.js"></script>
 </body>
 

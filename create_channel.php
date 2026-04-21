@@ -10,11 +10,14 @@ if (!$is_logged_in) {
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $channel_name = preg_replace('/[^a-zA-Z0-9_-]/', '', $_POST["channel_name"]);
+
+    $description = test_input($_POST["description"]);
+
     $user_id = $_SESSION["id"];
 
-    $sql = "INSERT INTO channels (user_id, channel_name) VALUES (?, ?)";
+    $sql = "INSERT INTO channels (user_id, channel_name, `description`) VALUES (?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("is", $user_id, $channel_name);
+    $stmt->bind_param("iss", $user_id, $channel_name, $description);
     $stmt->execute();
     $channel_id = $conn->insert_id;
 
@@ -53,6 +56,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     header("Location: create.php");
     exit;
+}
+
+function test_input($data)
+{
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
 }
 ?>
 
@@ -231,7 +242,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </p>
             </div>
         </nav>
-        <main>
+        <main class="content">
             <div class="form-container">
                 <div class="left">
                     <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>"
@@ -239,6 +250,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <h1 class="gradient-text">Create a Channel</h1>
                         <label>Channel Name:</label>
                         <input type="text" name="channel_name" required>
+                        <br><br>
+
+                        <label>Description:</label><br>
+                        <textarea name="description" required></textarea>
                         <br><br>
 
                         <label>Profile Pic:</label>

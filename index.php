@@ -2,6 +2,38 @@
 include "config.php";
 session_start();
 
+if (isset($_SESSION['id'])) {
+    $check_sql = "SELECT id FROM register WHERE id = ?";
+    $check_stmt = $conn->prepare($check_sql);
+    $check_stmt->bind_param("i", $_SESSION['id']);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    if ($check_result->num_rows === 0) {
+        // User no longer exists – destroy session and redirect
+        session_destroy();
+        header("Location: index.php");
+        exit;
+    }
+    $check_stmt->close();
+
+    // Also verify the channel exists for this user
+    $channel_sql = "SELECT profile_pic FROM channels WHERE user_id = ? ORDER BY id ASC LIMIT 1";
+    $channel_stmt = $conn->prepare($channel_sql);
+    $channel_stmt->bind_param("i", $_SESSION['id']);
+    $channel_stmt->execute();
+    $channel_result = $channel_stmt->get_result();
+    if ($channel_result->num_rows === 0) {
+        // No channel – redirect to create one
+        session_destroy();
+        header("Location: create_channel.php");
+        exit;
+    }
+    $channel_row = $channel_result->fetch_assoc();
+    // Update session profile pic (in case it changed externally)
+    $_SESSION['channel_profile_pic'] = $channel_row['profile_pic'] ?? 'images/default-channel.png';
+    $channel_stmt->close();
+}
+
 $is_logged_in = isset($_SESSION["id"]);
 
 $conn->select_db("maya_thirai"); // force the correct DB
@@ -39,7 +71,7 @@ $result_shorts = $conn->query($sql_shorts);
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
     <link rel="icon" type="image/x-icon" href="images/logo-tab.png">
     <link rel="stylesheet" href="Stylesheet/stylesheet.css">
-    <link rel="stylesheet" href="js/jquery.min.js">
+    <script src="js/jquery.min.js"></script>
 </head>
 
 <body>
@@ -233,12 +265,12 @@ $result_shorts = $conn->query($sql_shorts);
                     <button class="chip end">C-Drama</button>
                 </div>
 
-                <button class="scroll-btn right" onclick="scrollChips(200)">❯</button>
+                <button class="scroll-btn right" onclick="scrollChips(200)"><span class="arrow">❯</span></button>
             </div>
 
             <div class="video-grid">
 
-                <div onclick="window.open('watch.php?v=' + this.getAttribute('data-video-id').trim(), '_blank');"
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
                     class="video-card" data-video-id="EPB6UyaJkGk ">
                     <img src="https://img.youtube.com/vi/EPB6UyaJkGk/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
@@ -246,6 +278,7 @@ $result_shorts = $conn->query($sql_shorts);
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -253,7 +286,7 @@ $result_shorts = $conn->query($sql_shorts);
                         </div>
                     </div>
                 </div>
-                <div onclick="window.open('watch.php?v=' + this.getAttribute('data-video-id').trim(), '_blank');"
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
                     class="video-card" data-video-id="Ih7bldj2nJE ">
                     <img src="https://img.youtube.com/vi/Ih7bldj2nJE/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
@@ -261,6 +294,8 @@ $result_shorts = $conn->query($sql_shorts);
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -268,13 +303,15 @@ $result_shorts = $conn->query($sql_shorts);
                         </div>
                     </div>
                 </div>
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="-pGdzIi9Lmg ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="-pGdzIi9Lmg ">
                     <img src="https://img.youtube.com/vi/-pGdzIi9Lmg/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -286,7 +323,7 @@ $result_shorts = $conn->query($sql_shorts);
 
             <?php if ($result_shorts && $result_shorts->num_rows > 0): ?>
                 <div class="shorts-section">
-                    <div class="shorts-header">...</div>
+                    <div class="shorts-header">Shorts ...</div>
                     <div class="shorts-scroll-container">
                         <div class="shorts-scroll">
                             <?php while ($short = $result_shorts->fetch_assoc()): ?>
@@ -314,13 +351,15 @@ $result_shorts = $conn->query($sql_shorts);
                 </div>
             <?php endif; ?>
             <div class="video-grid">
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="gfKVnjoBD3c ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="gfKVnjoBD3c ">
                     <img src="https://img.youtube.com/vi/gfKVnjoBD3c/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -328,13 +367,15 @@ $result_shorts = $conn->query($sql_shorts);
                         </div>
                     </div>
                 </div>
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="2Fa1Il-3k88 ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="2Fa1Il-3k88 ">
                     <img src="https://img.youtube.com/vi/2Fa1Il-3k88/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -342,13 +383,15 @@ $result_shorts = $conn->query($sql_shorts);
                         </div>
                     </div>
                 </div>
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="35npVaFGHMY ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="35npVaFGHMY ">
                     <img src="https://img.youtube.com/vi/35npVaFGHMY/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -358,13 +401,15 @@ $result_shorts = $conn->query($sql_shorts);
                 </div>
             </div>
             <div class="video-grid">
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="C6UKeUSXpQw">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="C6UKeUSXpQw">
                     <img src="https://img.youtube.com/vi/C6UKeUSXpQw/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -372,13 +417,15 @@ $result_shorts = $conn->query($sql_shorts);
                         </div>
                     </div>
                 </div>
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="p8mXAQ6cPxg ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="p8mXAQ6cPxg ">
                     <img src="https://img.youtube.com/vi/p8mXAQ6cPxg/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -386,13 +433,15 @@ $result_shorts = $conn->query($sql_shorts);
                         </div>
                     </div>
                 </div>
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="98kYg52aQeY ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="98kYg52aQeY ">
                     <img src="https://img.youtube.com/vi/98kYg52aQeY/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -402,13 +451,15 @@ $result_shorts = $conn->query($sql_shorts);
                 </div>
             </div>
             <div class="video-grid">
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="klFLX-g71TE ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="klFLX-g71TE ">
                     <img src="https://img.youtube.com/vi/klFLX-g71TE/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -416,13 +467,15 @@ $result_shorts = $conn->query($sql_shorts);
                         </div>
                     </div>
                 </div>
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="Igs0u3_-HEk ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="Igs0u3_-HEk ">
                     <img src="https://img.youtube.com/vi/Igs0u3_-HEk/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -430,13 +483,15 @@ $result_shorts = $conn->query($sql_shorts);
                         </div>
                     </div>
                 </div>
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="06VCO1Y-CZk ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="06VCO1Y-CZk ">
                     <img src="https://img.youtube.com/vi/06VCO1Y-CZk/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -446,13 +501,15 @@ $result_shorts = $conn->query($sql_shorts);
                 </div>
             </div>
             <div class="video-grid">
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="IhJa4YysIfY ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="IhJa4YysIfY ">
                     <img src="https://img.youtube.com/vi/IhJa4YysIfY/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -460,13 +517,15 @@ $result_shorts = $conn->query($sql_shorts);
                         </div>
                     </div>
                 </div>
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="uU4dMlPqtyk ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="uU4dMlPqtyk ">
                     <img src="https://img.youtube.com/vi/uU4dMlPqtyk/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -474,13 +533,15 @@ $result_shorts = $conn->query($sql_shorts);
                         </div>
                     </div>
                 </div>
-                <div onclick="window.location.href='watch.php';" class="video-card" data-video-id="qhAg6kFmlN7w ">
+                <div onclick="window.open('video_page.php?v=' + this.getAttribute('data-video-id').trim());"
+                    class="video-card" data-video-id="qhAg6kFmlN7w ">
                     <img src="https://img.youtube.com/vi/hAg6kFmlN7w/0.jpg" alt="Video Thumbnail" />
                     <div class="video-info">
                         <div class="video-img">
                             <img alt="Profile Picture"
                                 src="https://img.freepik.com/premium-vector/user-profile-icon-circle_1256048-12499.jpg?semt=ais_hybrid&w=740&q=80">
                         </div>
+                        <span style="padding-left: 10px;"></span>
                         <div class="video-txt">
                             <h4>Video Title</h4>
                             <p>Channel Name</p>
@@ -504,6 +565,7 @@ $result_shorts = $conn->query($sql_shorts);
                                     <img src="<?php echo htmlspecialchars($row['profile_pic'] ?? 'images/default-channel.png'); ?>"
                                         alt="Channel">
                                 </div>
+                                <span style="padding-left: 10px;"></span>
                                 <span style="padding-left: 10px;"></span>
                                 <div class="video-txt">
                                     <h4>

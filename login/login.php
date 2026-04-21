@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['channel_profile_pic'] = $channel_row['profile_pic'] ?? 'images/default-channel.png';
                 } else {
                     // No channel exists – redirect to create_channel.php
-                    header("Location: create_channel.php");
+                    header("Location: ../create_channel.php");
                     exit;
                 }
                 $channel_stmt->close();
@@ -83,7 +83,7 @@ function test_input($data)
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
     <link rel="icon" type="image/x-icon" href="../images/logo-tab.png">
-    <link rel="stylesheet" href="Stylesheet/login_style.css">
+    <script src="js/jquery.min.js"></script>
 </head>
 
 <body>

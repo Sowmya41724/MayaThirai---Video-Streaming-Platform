@@ -8,6 +8,38 @@ if (!$is_logged_in) {
     exit;
 }
 
+if (isset($_SESSION['id'])) {
+    $check_sql = "SELECT id FROM register WHERE id = ?";
+    $check_stmt = $conn->prepare($check_sql);
+    $check_stmt->bind_param("i", $_SESSION['id']);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    if ($check_result->num_rows === 0) {
+        // User no longer exists – destroy session and redirect
+        session_destroy();
+        header("Location: ../index.php");
+        exit;
+    }
+    $check_stmt->close();
+
+    // Also verify the channel exists for this user
+    $channel_sql = "SELECT profile_pic FROM channels WHERE user_id = ? ORDER BY id ASC LIMIT 1";
+    $channel_stmt = $conn->prepare($channel_sql);
+    $channel_stmt->bind_param("i", $_SESSION['id']);
+    $channel_stmt->execute();
+    $channel_result = $channel_stmt->get_result();
+    if ($channel_result->num_rows === 0) {
+        // No channel – redirect to create one
+        session_destroy();
+        header("Location: ../create_channel.php");
+        exit;
+    }
+    $channel_row = $channel_result->fetch_assoc();
+    // Update session profile pic (in case it changed externally)
+    $_SESSION['channel_profile_pic'] = $channel_row['profile_pic'] ?? '../images/default-channel.png';
+    $channel_stmt->close();
+}
+
 if (isset($_GET['channel']) && is_numeric($_GET['channel'])) {
     $new_id = intval($_GET['channel']);
     foreach ($channels as $ch) {
@@ -47,7 +79,7 @@ if (!$current_channel && !empty($channels)) {
     $current_channel_id = $current_channel['id'];
     $_SESSION['channel_id'] = $current_channel_id;
     $_SESSION['channel_name'] = $current_channel['channel_name'];
-    $_SESSION['channel_profile_pic'] = $current_channel['profile_pic'] ?? 'images/default-channel.png';
+    $_SESSION['channel_profile_pic'] = $current_channel['profile_pic'] ?? '../images/default-channel.png';
 }
 
 // Handle form submissions
@@ -298,113 +330,17 @@ $stmt->close();
     <title>Settings - Mayathirai</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="../images/logo-tab.png">
-    <link rel="stylesheet" href="../Stylesheet/stylesheet.css">
-    <style>
-        .settings-container {
-            max-width: 800px;
-            margin: 2rem auto;
-            background: var(--card-bg);
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .tabs {
-            display: flex;
-            gap: 1rem;
-            border-bottom: 1px solid var(--text-secondary);
-            margin-bottom: 2rem;
-        }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            cursor: pointer;
-            font-size: 1rem;
-            color: var(--text-secondary);
-            transition: 0.2s;
-        }
-
-        .tab-btn.active {
-            color: var(--text-primary);
-            border-bottom: 2px solid #4b13a4;
-        }
-
-        .tab-pane {
-            display: none;
-        }
-
-        .tab-pane.active {
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        input,
-        textarea,
-        select {
-            width: 100%;
-            padding: 0.7rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--text-secondary);
-            color: var(--text-primary);
-            border-radius: 8px;
-        }
-
-        .btn {
-            background: #4b13a4;
-            color: white;
-            padding: 0.7rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        .btn-danger {
-            background: #cc0000;
-        }
-
-        .success {
-            color: #4b13a4;
-            margin-bottom: 1rem;
-        }
-
-        .error {
-            color: #cc0000;
-            margin-bottom: 1rem;
-        }
-
-        hr {
-            margin: 2rem 0;
-            border-color: var(--text-secondary);
-        }
-
-        .current-pic {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-top: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="../stylesheet/stylesheet.css">
+    <script src="../js/jquery.min.js"></script>
 </head>
 
-<body>
+<body class="offcanvas-menu">
     <header class="page-header">
         <div class="logo-area">
             <div id="menu">
-                <button onclick="myFunction()" style="background-color: transparent;border: none;"><i class="fa fa-bars"
-                        style="color: white;"></i></button>
+                <button onclick="openNav()" style="background-color: transparent; border: none;">
+                    <i class="fa fa-bars" style="color: white;"></i>
+                </button>
             </div>
             <img onclick="location.href='../index.php'" src="../images/logo-final.png" alt="logo" class="logo-img">
         </div>
@@ -443,145 +379,169 @@ $stmt->close();
             <?php endif; ?>
         </div>
     </header>
+    <div class="app-container">
 
-    <main class="content">
-        <div class="settings-container">
-            <h1>Settings</h1>
-            <?php if ($success): ?>
-                <div class="success">
-                    <?php echo $success; ?>
-                </div>
-            <?php endif; ?>
-            <?php if ($error): ?>
-                <div class="error">
-                    <?php echo $error; ?>
-                </div>
-            <?php endif; ?>
+        <!-- SIDE MENU -->
+        <nav class="side-menu">
 
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="account">Account</button>
-                <button class="tab-btn" data-tab="channel">Channel</button>
+            <div class="menu-item">
+                <div class="menu-head dashboard">
+                    <h2>Settings</h2>
+                </div>
             </div>
 
-            <!-- Account Tab -->
-            <div id="account" class="tab-pane active">
-                <form method="post">
-                    <h3>Change Email</h3>
-                    <div class="form-group">
-                        <label>New Email</label>
-                        <input type="email" name="email" value="<?php echo htmlspecialchars($user_data['email']); ?>"
-                            required>
-                    </div>
-                    <button type="submit" name="update_email" class="btn">Update Email</button>
-                </form>
-                <hr>
-                <form method="post">
-                    <h3>Change Password</h3>
-                    <div class="form-group">
-                        <label>Old Password</label>
-                        <input type="password" name="old_password" required>
-                    </div>
-                    <div class="form-group">
-                        <label>New Password</label>
-                        <input type="password" name="new_password" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Confirm New Password</label>
-                        <input type="password" name="confirm_password" required>
-                    </div>
-                    <button type="submit" name="update_password" class="btn">Update Password</button>
-                </form>
-                <hr>
-                <form method="post"
-                    onsubmit="return confirm('WARNING: This will permanently delete your account and all videos. Type your password to confirm.');">
-                    <h3>Delete Account</h3>
-                    <div class="form-group">
-                        <label>Confirm Password</label>
-                        <input type="password" name="confirm_delete_password" required>
-                    </div>
-                    <button type="submit" name="delete_account" class="btn btn-danger">Delete My Account</button>
-                </form>
+            <div class="menu-item">
+                <div class="menu-head dashboard" data-tab="account" onclick="window.location.href='#account';">
+                    Account
+                </div>
             </div>
 
-            <!-- Channel Tab -->
-            <div id="channel" class="tab-pane">
-                <?php if (count($channels) > 1): ?>
-                    <div class="form-group">
-                        <label>Select Channel</label>
-                        <select id="channelSelect">
-                            <?php foreach ($channels as $ch): ?>
-                                <option value="<?php echo $ch['id']; ?>"
-                                    data-name="<?php echo htmlspecialchars($ch['channel_name']); ?>"
-                                    data-desc="<?php echo htmlspecialchars($ch['description']); ?>"
-                                    data-pic="<?php echo $ch['profile_pic']; ?>" <?php echo ($ch['id'] == $current_channel_id) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($ch['channel_name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+            <div class="menu-item">
+                <div class="menu-head dashboard" data-tab="channel" onclick="window.location.href='#channel';">
+                    Channel
+                </div>
+            </div>
+        </nav>
+
+
+        <main class="content">
+            <div class="settings-container">
+                <?php if ($success): ?>
+                    <div class="success">
+                        <?php echo $success; ?>
                     </div>
                 <?php endif; ?>
-                <form method="post" enctype="multipart/form-data" id="channelForm">
-                    <input type="hidden" name="channel_id" id="channel_id" value="<?php echo $current_channel_id; ?>">
-                    <div class="form-group">
-                        <label>Channel Name</label>
-                        <input type="text" name="channel_name" id="channel_name"
-                            value="<?php echo htmlspecialchars($current_channel['channel_name']); ?>" required>
+                <?php if ($error): ?>
+                    <div class="error">
+                        <?php echo $error; ?>
                     </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea name="description" id="description"
-                            rows="4"><?php echo htmlspecialchars($current_channel['description']); ?></textarea>
-                    </div>
-                    <button type="submit" name="update_channel" class="btn">Save Channel Settings</button>
-                </form>
-                <hr>
-                <form method="post" enctype="multipart/form-data">
-                    <input type="hidden" name="channel_id" value="<?php echo $current_channel_id; ?>">
-                    <div class="form-group">
-                        <label>Profile Picture</label>
-                        <input type="file" name="profile_pic" accept="image/jpeg,image/png">
-                        <?php if (!empty($current_channel['profile_pic']) && file_exists($current_channel['profile_pic'])): ?>
-                            <img class="current-pic" src="<?php echo htmlspecialchars($current_channel['profile_pic']); ?>"
-                                alt="Current Profile Picture">
-                        <?php else: ?>
-                            <img class="current-pic" src="../images/default-channel.png" alt="Default Profile Picture">
-                        <?php endif; ?>
-                    </div>
-                    <button type="submit" name="upload_profile_pic" class="btn">Upload Picture</button>
-                </form>
-            </div>
-        </div>
-    </main>
+                <?php endif; ?>
 
-    <script src="../script.js"></script>
-    <script>
-        // Tab switching
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(btn.dataset.tab).classList.add('active');
+                <!-- Account Tab -->
+                <div id="account" class="tab-pane active">
+                    <h1 class="gradient-text">Account</h1>
+                    <br>
+                    <form method="post">
+                        <h3>Change Email</h3>
+                        <div class="form-group">
+                            <label>New Email</label>
+                            <input type="email" name="email"
+                                value="<?php echo htmlspecialchars($user_data['email']); ?>" required>
+                        </div>
+                        <button type="submit" name="update_email" class="btn">Update Email</button>
+                    </form>
+                    <hr class="line">
+                    <form method="post">
+                        <h3>Change Password</h3>
+                        <div class="form-group">
+                            <label>Old Password</label>
+                            <input type="password" name="old_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" name="new_password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" name="confirm_password" required>
+                        </div>
+                        <button type="submit" name="update_password" class="btn">Update Password</button>
+                    </form>
+                    <hr class="line">
+                    <form method="post"
+                        onsubmit="return confirm('WARNING: This will permanently delete your account and all videos. Type your password to confirm.');">
+                        <h3>Delete Account</h3>
+                        <div class="form-group">
+                            <label>Confirm Password</label>
+                            <input type="password" name="confirm_delete_password" required>
+                        </div>
+                        <button type="submit" name="delete_account" class="btn btn-danger">Delete My Account</button>
+                    </form>
+                </div>
+
+                <!-- Channel Tab -->
+                <div id="channel" class="tab-pane">
+                    <h1 class="gradient-text">Channel</h1>
+                    <?php if (count($channels) > 1): ?>
+                        <div class="form-group">
+                            <label>Select Channel</label>
+                            <select id="channelSelect">
+                                <?php foreach ($channels as $ch): ?>
+                                    <option value="<?php echo $ch['id']; ?>"
+                                        data-name="<?php echo htmlspecialchars($ch['channel_name']); ?>"
+                                        data-desc="<?php echo htmlspecialchars($ch['description']); ?>"
+                                        data-pic="<?php echo $ch['profile_pic']; ?>" <?php echo ($ch['id'] == $current_channel_id) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($ch['channel_name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    <?php endif; ?>
+                    <form method="post" enctype="multipart/form-data" id="channelForm">
+                        <input type="hidden" name="channel_id" id="channel_id"
+                            value="<?php echo $current_channel_id; ?>">
+                        <div class="form-group">
+                            <label>Channel Name</label>
+                            <input type="text" name="channel_name" id="channel_name"
+                                value="<?php echo htmlspecialchars($current_channel['channel_name']); ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea name="description" id="description"
+                                rows="4"><?php echo htmlspecialchars($current_channel['description']); ?></textarea>
+                        </div>
+                        <button type="submit" name="update_channel" class="btn">Save Channel Settings</button>
+                    </form>
+                    <hr>
+                    <form method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="channel_id" value="<?php echo $current_channel_id; ?>">
+                        <div class="form-group">
+                            <label>Profile Picture</label>
+                            <input type="file" name="profile_pic" accept="image/jpeg,image/png">
+                            <?php if (!empty($current_channel['profile_pic']) && file_exists($current_channel['profile_pic'])): ?>
+                                <img class="current-pic"
+                                    src="<?php echo htmlspecialchars($current_channel['profile_pic']); ?>"
+                                    alt="Current Profile Picture">
+                            <?php else: ?>
+                                <img class="current-pic" src="../images/default-channel.png" alt="Default Profile Picture">
+                            <?php endif; ?>
+                        </div>
+                        <button type="submit" name="upload_profile_pic" class="btn">Upload Picture</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <script src="../script.js"></script>
+        <script>
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById(btn.dataset.tab).classList.add('active');
+                });
             });
-        });
-        // Channel switcher (reload page with selected channel)
-        const chanSelect = document.getElementById('channelSelect');
-        if (chanSelect) {
-            chanSelect.addEventListener('change', function () {
-                const selectedId = this.value;
-                window.location.href = 'settings.php?channel=' + selectedId;
-            });
-        }
-        // If URL has ?channel=, update current channel (simplified: just reload with session update)
-        const urlParams = new URLSearchParams(window.location.search);
-        const channelParam = urlParams.get('channel');
-        if (channelParam) {
-            // Optionally send AJAX to update session, or just reload after redirect.
-            // For simplicity, we'll redirect to same page without param after setting session via a POST?
-            // Better to handle in PHP at top. We'll just rely on PHP to process ?channel=.
-            // Actually, we already fetch channels array; we can add logic in PHP to set session based on ?channel=
-        }
-    </script>
+            // Channel switcher (reload page with selected channel)
+            const chanSelect = document.getElementById('channelSelect');
+            if (chanSelect) {
+                chanSelect.addEventListener('change', function () {
+                    const selectedId = this.value;
+                    window.location.href = 'settings.php?channel=' + selectedId;
+                });
+            }
+            // If URL has ?channel=, update current channel (simplified: just reload with session update)
+            const urlParams = new URLSearchParams(window.location.search);
+            const channelParam = urlParams.get('channel');
+            if (channelParam) {
+                // Optionally send AJAX to update session, or just reload after redirect.
+                // For simplicity, we'll redirect to same page without param after setting session via a POST?
+                // Better to handle in PHP at top. We'll just rely on PHP to process ?channel=.
+                // Actually, we already fetch channels array; we can add logic in PHP to set session based on ?channel=
+            }
+        </script>
+    </div>
 </body>
 
 </html>
