@@ -80,7 +80,6 @@ button {
   font-size: 1rem;
   border-radius: 50px;
   transition: all 0.2s;
-  color: white;
 }
 
 .gradient-text {
@@ -90,7 +89,7 @@ button {
 input {
   padding: 12px 20px;
   border: 1px solid #ddd;
-  background: white;
+  background: #f9f9f9;
   margin-top: 6px;
   width: 100%;
   box-sizing: border-box;
@@ -99,29 +98,27 @@ input {
 input:focus {
   outline: none;
   border-color: #4b13a4;
-  background: #1e2833;
+  background: #fff;
   box-shadow: 0 0 0 3px rgba(98, 1, 167, 0.29);
 }
 
 .btn {
-  background-color: #4b13a4;
+  background: #4b13a4;
   color: white;
   border: none;
-  padding: 0.6rem 1.8rem;
-  border-radius: 30px;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 14px 24px;
   cursor: pointer;
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 8px rgba(54, 53, 53, 0.3);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  width: 100%;
+  margin-top: 1rem;
 }
 
 .btn:hover {
-  background-color: black;
+  background: black;
   color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(10, 36, 99, 0.3);
 }
 
 .error {

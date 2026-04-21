@@ -101,7 +101,7 @@
 
         <button class="scroll-btn right" onclick="scrollChips(200)">❯</button>
     </div>
-    <div onclick="window.location.href='You/history.php';" class="video-card" data-video-id="EPB6UyaJkGk ">
+    <div onclick="window.location.href='you/history.php';" class="video-card" data-video-id="EPB6UyaJkGk ">
         <img src="https://img.youtube.com/vi/EPB6UyaJkGk/0.jpg" alt="Video Thumbnail" />
         <div class="video-info">
             <h4>Video Title</h4>

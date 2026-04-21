@@ -37,6 +37,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION["id"] = $user["id"];
                 $_SESSION["user_name"] = $user["user_name"];
                 $_SESSION["user_id"] = $user["user_id"];
+
+                $channel_sql = "SELECT id, channel_name, profile_pic FROM channels WHERE user_id = ? ORDER BY id ASC LIMIT 1";
+                $channel_stmt = $conn->prepare($channel_sql);
+                $channel_stmt->bind_param("i", $user["id"]);
+                $channel_stmt->execute();
+                $channel_result = $channel_stmt->get_result();
+                if ($channel_row = $channel_result->fetch_assoc()) {
+                    $_SESSION['channel_id'] = $channel_row['id'];
+                    $_SESSION['channel_name'] = $channel_row['channel_name'];
+                    $_SESSION['channel_profile_pic'] = $channel_row['profile_pic'] ?? 'images/default-channel.png';
+                } else {
+                    // No channel exists – redirect to create_channel.php
+                    header("Location: create_channel.php");
+                    exit;
+                }
+                $channel_stmt->close();
                 header("Location: ../index.php");
                 exit;
             } else {

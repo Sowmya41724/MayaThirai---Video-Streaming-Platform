@@ -114,6 +114,60 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->bind_param("sssss", $user_name, $mobile, $email, $user_id, $password_hash);
 
         if ($stmt->execute()) {
+            $user_id_from_db = $conn->insert_id; // the new user's ID
+
+            // Generate a unique channel name based on user_name
+            $base_channel_name = preg_replace('/[^a-zA-Z0-9_-]/', '', $user_name);
+            if (empty($base_channel_name)) {
+                $base_channel_name = 'user' . $user_id_from_db;
+            }
+            $channel_name = $base_channel_name;
+            $counter = 1;
+
+            // Ensure channel_name is unique (because of UNIQUE constraint)
+            while (true) {
+                $check_sql = "SELECT id FROM channels WHERE channel_name = ?";
+                $check_stmt = $conn->prepare($check_sql);
+                $check_stmt->bind_param("s", $channel_name);
+                $check_stmt->execute();
+                $check_result = $check_stmt->get_result();
+                if ($check_result->num_rows == 0) {
+                    $check_stmt->close();
+                    break;
+                }
+                $check_stmt->close();
+                $channel_name = $base_channel_name . '_' . $counter;
+                $counter++;
+            }
+
+            // Insert the channel
+            $channel_sql = "INSERT INTO channels (user_id, channel_name, profile_pic) VALUES (?, ?, ?)";
+            $channel_stmt = $conn->prepare($channel_sql);
+            $default_pic = null; // or 'images/default-channel.png'
+            $channel_stmt->bind_param("iss", $user_id_from_db, $channel_name, $default_pic);
+
+            if ($channel_stmt->execute()) {
+                $channel_id = $conn->insert_id;
+
+                // Create folder structure for this channel
+                $base_dir = "uploads/" . $channel_name . "/";
+                $subdirs = [
+                    'channel_pic',
+                    'videos',
+                    'videos/thumbnails',
+                    'shorts',
+                    'shorts/thumbnails'
+                ];
+                foreach ($subdirs as $sub) {
+                    $path = $base_dir . $sub;
+                    if (!is_dir($path)) {
+                        mkdir($path, 0755, true);
+                    }
+                }
+            }
+            $channel_stmt->close();
+
+            // Registration successful, redirect to login
             $_SESSION['registered'] = true;
             header("Location: login.php");
             exit;
